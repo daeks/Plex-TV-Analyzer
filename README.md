@@ -6,14 +6,19 @@ Plex-TV-Analyzer is a simple web page that will analyze a television show in you
 Modifications by daeks
 ================
 
-Installation: Modify and rename config.example.php to config.php
-
 - Added PLEX Token support (see config.example.php)
 - Added more layouts to display missing episodes only
 - Added more statistics to selectlist to missing/total episodes, show status (C=Continueing, E=Ended) and PLEX section name
 - Ended shows with no missing episodes will be removed after first lookup (information is stored at /cache/finished)
 - Ended shows with missing episodes can be ignored (information is stored at /cache/ignore) - To unignore delete file in /cache/ignore
 
+Installation
+================
+
+- Modify and rename config.example.php to config.php
+- Set 0777 (write permission) to cache folder
+
+License
 ================
 
 The MIT License (MIT)

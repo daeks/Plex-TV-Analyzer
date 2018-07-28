@@ -2,6 +2,7 @@
   if (!file_exists('config.php')) {
     die('config.php is missing - please rename config.example.php and modify its values first.');
   }
+  include_once('tvclass.php');
 ?>
 <!DOCTYPE html>
 <html>
@@ -79,9 +80,7 @@
 </script>
 </head>
 <body style="background-image:url(./img/background.jpg);background-repeat:repeat-x;z-index:0">
-<?php
-  include_once('tvclass.php');
-  
+<?php 
   echo '<br><br><br>';
   echo '<div id="filepath"><div style="float:left;padding-right:0px;padding-bottom:12px;"></div><div style="float:left;"><select class="basic-single" id="showSelector" onchange="SubmitForm(\'Missing\');">';
   $section = '';

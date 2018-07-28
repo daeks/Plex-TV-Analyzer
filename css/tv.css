@@ -1,6 +1,10 @@
 * {
   font-family: Arial, Helvetica, sans-serif;
 }
+.select {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+}
 #filepath {
   width: 900px;
   margin-left: auto;
@@ -71,4 +75,16 @@ thead tr th{
   background-image: url(../img/header-bg.png);
   background-repeat: repeat;
   color: black;
+}
+.button{ 
+  border: 1px solid #cccccc; cursor: pointer; font-weight: normal; font-size: 13px; padding: 6px; color: #000; font-family: 'lucida grande', tahoma, verdana, arial, sans-serif; 
+  background: -webkit-gradient(linear, left top, left bottom, from(#FAFAFA), color-stop(0.5, #FAFAFA), color-stop(0.5, #E5E5E5), to(#F9F9F9)); 
+  background: -moz-linear-gradient(top, #FAFAFA, #FAFAFA 50%, #E5E5E5 50%, #F9F9F9);
+  filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr='#FAFAFA', endColorstr='#E5E5E5');
+}
+.button:hover {  
+  background: -webkit-gradient(linear, left top, left bottom, from(#EDEDED), color-stop(0.5, #EDEDED), color-stop(0.5, #D9D9D9), to(#EDEDED)); 
+  background: -moz-linear-gradient(top, #EDEDED, #EDEDED 50%, #D9D9D9 50%, #EDEDED);
+  filter: progid:DXImageTransform.Microsoft.gradient(GradientType=0,startColorstr='#E3326E', endColorstr='#D9D9D9'); 
+  #search-wrap input{width:400px; font-size:16px; color:#999999; padding:6px; border:solid 1px #999999;
 }

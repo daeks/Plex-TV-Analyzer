@@ -24,18 +24,26 @@
       $sectionUrl = Config::$PlexURL.'/library/sections';
       $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'?X-Plex-Token='.Config::$PlexTOKEN));
       foreach ($xml->Directory as $sec) {
-        if ((string) $sec['type'] == 'show' && $sec['title'] != 'PVR Shows (PLEX)') {
+        if ((string) $sec['type'] == 'show' && !in_array($sec['title'], Config::$PlexIGNORE)) {
           $secXML = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'/'.$sec['key'].'/all?X-Plex-Token='.Config::$PlexTOKEN));
           foreach ($secXML->Directory as $sho) {
-            if (!file_exists('cache/finished/'.$sho['ratingKey']) && !file_exists('cache/ignore/'.$sho['ratingKey'])) {
-              $suffix = '('.$sec['title'].')';
-              if (file_exists('cache/ended/'.$sho['ratingKey'])) {
-                $suffix = file_get_contents('cache/ended/'.$sho['ratingKey']).'E '.$suffix;
+            if (!file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']))) {
+              $status = '';
+              $amount = '';
+              if (file_exists('cache/ended/'.strval($sho['ratingKey']))) {
+                $status = 'E';
+                $amount = file_get_contents('cache/ended/'.strval($sho['ratingKey']));
               }
-              if (file_exists('cache/'.$sho['ratingKey'])) {
-                $suffix = file_get_contents('cache/'.$sho['ratingKey']).'C '.$suffix;
-              }           
-              $shows[(strval($sho['titleSort']) != '' ? strval($sho['titleSort'].' @ '.$suffix) : strval($sho['title'].' @ '.$suffix))] = $sho['ratingKey'];
+              if (file_exists('cache/'.strval($sho['ratingKey']))) {
+                $status = 'C';
+                $amount = file_get_contents('cache/'.strval($sho['ratingKey']));
+              }
+              $title = (strval($sho['titleSort']) != '' ? strval($sho['titleSort']) : strval($sho['title']));
+              $shows[strval($sho['ratingKey'])] = array('title' => $title,
+                                                'status' => $status,
+                                                'amount' => $amount,
+                                                'section' => $sec['title']
+                                                );
             }
           }
         }

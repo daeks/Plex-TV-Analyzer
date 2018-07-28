@@ -1,4 +1,3 @@
-<?php require_once('../old/globals/global_auth.php'); ?>
 <?php
   if (!file_exists('config.php')) {
     die('config.php is missing - please rename config.example.php and modify its values first.');

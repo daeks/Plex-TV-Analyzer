@@ -1,4 +1,4 @@
-Plex-TV-Analyzer
+Plex-TV-Analyzer RELOADED
 ================
 
 Plex-TV-Analyzer is a simple web page that will analyze a television show in your Plex library and tell you which episodes you are missing. Written as a web application. Must have PHP installed to use
@@ -6,7 +6,7 @@ Plex-TV-Analyzer is a simple web page that will analyze a television show in you
 Modifications by daeks
 ================
 
-- Upaded JS libraries and added better select list
+- Updated JS libraries and added better select list
 - Added TV Shows section ignore functionallity (just add one or more library name to config.php)
 - Added PLEX Token support (see config.example.php)
 - Added more layouts to display missing episodes only

@@ -11,6 +11,7 @@ Modifications by daeks
 - Added more statistics to selectlist to missing/total episodes, show status (C=Continueing, E=Ended) and PLEX section name
 - Ended shows with no missing episodes will be removed after first lookup (information is stored at /cache/finished)
 - Ended shows with missing episodes can be ignored (information is stored at /cache/ignore) - To unignore delete file in /cache/ignore
+- Added language support for thetvdb lookup
 
 Installation
 ================

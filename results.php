@@ -11,7 +11,7 @@
       exit();
     }
   foreach($shows as $show) {
-    echo '<tr><td colspan="3" class="show">'.$_POST['option'].' - '.$show->ShowName.' ('.$show_id.') - <span id="status">'.$show->Status.'</span></td> </tr>';
+    echo '<tr><td colspan="3" class="show">Show '.$_POST['option'].' - '.$show->ShowName.' ('.$show_id.') - Status: <span id="status">'.$show->Status.'</span></td> </tr>';
     if(is_array($show->Episodes)) {
       $season = $show->Episodes[0]->SeasonNumber;
       echo '<tr><td colspan="3" class="season">Season '.$season.'</td></tr>';

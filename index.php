@@ -50,7 +50,7 @@
   }
  
   $(document).ready(function() {
-    $('.basic-single').select2({ dropdownAutoWidth : true, dropdownCssClass: "select" }).maximizeSelect2Height();
+    $('.basic-single').select2({ placeholder: "Select a show", allowClear: true, dropdownAutoWidth : true, dropdownCssClass: "select" }).maximizeSelect2Height();
     
     $("body").on('keyup', ".select2,.select2-dropdown", function (e) {
       var KEYS = { UP: 38, DOWN: 40 };
@@ -82,8 +82,9 @@
 <body style="background-image:url(./img/background.jpg);background-repeat:repeat-x;z-index:0">
 <?php 
   echo '<br><br><br>';
-  echo '<div id="filepath"><div style="float:left;padding-right:0px;padding-bottom:12px;"></div><div style="float:left;"><select class="basic-single" id="showSelector" onchange="SubmitForm(\'Missing\');">';
+  echo '<div id="filepath"><div style="float:left;padding-right:0px;padding-bottom:12px;"></div><div style="float:left;"><select class="basic-single" id="showSelector" onchange="SubmitForm(\'Missing\');"><option></option>';
   $section = '';
+  $status = '';
   foreach(TVAnalyzer::GetUserShows() as $key => $value) {
     if ($section != $value['section']) {
       if ($secion != '') {
@@ -92,9 +93,18 @@
       echo '<optgroup label="'.$value['section'].'">';
       $section = $value['section'];
     }
-    echo '<option value="'.$key.'">'.$value['title'];
+    if ($status != '') {
+      if ($status != $value['status']) {
+        echo '<option disabled>-- '.$value['status'].' -------------------------------------------------------------------------------------------------------------------</option>';
+        $status = $value['status'];
+      }
+    } else {
+      echo '<option disabled>-- '.$value['status'].' -------------------------------------------------------------------------------------------------------------------</option>';
+      $status = $value['status'];
+    }
+    echo '<option value="'.$value['show_id'].'">'.$value['title'];
     if ($value['amount'] != '') {
-      echo ' @ '.$value['amount'].$value['status'];
+      echo ' @ '.$value['amount'].substr($value['status'], 0, 1);
     }
     echo '</option>';
   }

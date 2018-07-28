@@ -28,26 +28,34 @@
           $secXML = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'/'.$sec['key'].'/all?X-Plex-Token='.Config::$PlexTOKEN));
           foreach ($secXML->Directory as $sho) {
             if (!file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']))) {
-              $status = '';
+              $status = 'Complete';
               $amount = '';
+              $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@3';;
               if (file_exists('cache/ended/'.strval($sho['ratingKey']))) {
-                $status = 'E';
+                $status ='Ended';
+                $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@1@E';
                 $amount = file_get_contents('cache/ended/'.strval($sho['ratingKey']));
               }
               if (file_exists('cache/'.strval($sho['ratingKey']))) {
-                $status = 'C';
+                $status = 'Continueing';
+                $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@2@C';
                 $amount = file_get_contents('cache/'.strval($sho['ratingKey']));
               }
               $title = (strval($sho['titleSort']) != '' ? strval($sho['titleSort']) : strval($sho['title']));
-              $shows[strval($sho['ratingKey'])] = array('title' => $title,
+              $shows[strval($sho['ratingKey'])] = array('show_id' => strval($sho['ratingKey']),
+                                                'title' => $title,
                                                 'status' => $status,
                                                 'amount' => $amount,
-                                                'section' => $sec['title']
+                                                'section' => $sec['title'],
+                                                'sortkey' => $sortkey.'@'.$title
                                                 );
             }
           }
         }
       }
+      
+      usort($shows, function($a,$b){ return strcmp(strtoupper($a["sortkey"]), strtoupper($b["sortkey"]));} );
+      print_r($shows);
       return $shows;
     }
 

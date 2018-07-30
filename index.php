@@ -95,16 +95,24 @@
     }
     if ($status != '') {
       if ($status != $value['status']) {
-        echo '<option disabled>-- '.$value['status'].' -------------------------------------------------------------------------------------------------------------------</option>';
+        echo '<option disabled>-- '.$value['status'].' ';
+        for ($i = 0;$i<(122-strlen($value['status'])-4);$i++) {
+          echo '-';
+        }
+        echo '</option>';
         $status = $value['status'];
       }
     } else {
-      echo '<option disabled>-- '.$value['status'].' -------------------------------------------------------------------------------------------------------------------</option>';
+      echo '<option disabled>-- '.$value['status'].' ';
+      for ($i = 0;$i<(122-strlen($value['status'])-4);$i++) {
+        echo '-';
+      }
+      echo '</option>';
       $status = $value['status'];
     }
     echo '<option value="'.$value['show_id'].'">'.$value['title'];
     if ($value['amount'] != '') {
-      echo ' @ '.$value['amount'].substr($value['status'], 0, 1);
+      echo ' @ '.$value['amount'].' '.substr($value['status'], 0, 1);
     }
     echo '</option>';
   }

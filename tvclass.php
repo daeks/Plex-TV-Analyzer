@@ -6,6 +6,7 @@
   
     private static $TVDBSearchURL = 'http://www.thetvdb.com/api/GetSeries.php?seriesname=';
     private static $TVDBLookURL = 'http://www.thetvdb.com/api/3B54A58ACFAF62FA/series/%s/all/%s.xml';
+    private static $TVDBCacheSeconds = 3600;
     
     public static function AnalyzeShow($show_name, $show_id) {
       if (!is_int($show_id)) {
@@ -27,19 +28,48 @@
         if ((string) $sec['type'] == 'show' && !in_array($sec['title'], Config::$PlexIGNORE)) {
           $secXML = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'/'.$sec['key'].'/all?X-Plex-Token='.Config::$PlexTOKEN));
           foreach ($secXML->Directory as $sho) {
-            if (!file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']))) {
-              $status = 'Complete';
+            $showme = true;
+            if (!isset($_GET['mode'])) {
+              $showme = !file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
+            } else {
+              switch ($_GET['mode']) {
+                case 'all':
+                  break;
+                case 'finished':
+                  $showme = file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
+                  break;
+                case 'ignored':
+                  $showme = file_exists('cache/ignore/'.strval($sho['ratingKey']));
+                  break;
+                case 'incomplete':
+                  $showme = file_exists('cache/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey'])) || file_exists('cache/ended/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
+                  break;
+                default:
+                  $showme = !file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
+              }
+            }
+            if ($showme) {
+              $status = 'Complete & Continueing';
               $amount = '';
-              $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@3';;
+              $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@4';;
               if (file_exists('cache/ended/'.strval($sho['ratingKey']))) {
-                $status ='Ended';
-                $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@1@E';
+                $status ='Ended & Incomplete';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@1';
                 $amount = file_get_contents('cache/ended/'.strval($sho['ratingKey']));
               }
               if (file_exists('cache/'.strval($sho['ratingKey']))) {
-                $status = 'Continueing';
-                $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@2@C';
+                $status = 'Continueing & Incomplete';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@2';
                 $amount = file_get_contents('cache/'.strval($sho['ratingKey']));
+              }
+              if (file_exists('cache/ignore/'.strval($sho['ratingKey']))) {
+                $status ='Ignored';
+                $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@3';
+              }
+              if (file_exists('cache/finished/'.strval($sho['ratingKey']))) {
+                $status = 'Finished (Ended & Complete)';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@5';
+                $amount = file_get_contents('cache/finished/'.strval($sho['ratingKey']));
               }
               $title = (strval($sho['titleSort']) != '' ? strval($sho['titleSort']) : strval($sho['title']));
               $shows[strval($sho['ratingKey'])] = array('show_id' => strval($sho['ratingKey']),
@@ -119,13 +149,34 @@
     }
 
     private static function GetUrlSource($url) {
-      $session = curl_init($url);
-      curl_setopt($session, CURLOPT_HEADER, false);
-      curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
-      curl_setopt($session, CURLOPT_MAXREDIRS, 3);
-      $response = curl_exec($session);
-      curl_close($session);
+      $response = '';
+      
+      if (!is_dir('cache/tvdb')) {
+          mkdir('cache/tvdb', 0777, true);
+        }
+      if (file_exists('cache/tvdb/'.md5($url))) {
+        if (time() - filemtime('cache/tvdb/'.md5($url)) > TVAnalyzer::$TVDBCacheSeconds) {
+          $session = curl_init($url);
+          curl_setopt($session, CURLOPT_HEADER, false);
+          curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+          curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
+          curl_setopt($session, CURLOPT_MAXREDIRS, 3);
+          $response = curl_exec($session);
+          curl_close($session);
+          file_put_contents('cache/tvdb/'.md5($url), $response);
+        } else {
+          $response = file_get_contents('cache/tvdb/'.md5($url));
+        }
+      } else {
+        $session = curl_init($url);
+        curl_setopt($session, CURLOPT_HEADER, false);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($session, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($session, CURLOPT_MAXREDIRS, 3);
+        $response = curl_exec($session);
+        curl_close($session);
+        file_put_contents('cache/tvdb/'.md5($url), $response);
+      }
       return $response;
     }
 

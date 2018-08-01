@@ -17,30 +17,41 @@
 <link rel="stylesheet" href="css/select2-4.0.5.min.css" type="text/css" />
 <script type="text/javascript">
 
-  function SubmitForm(option) {
+  function SubmitForm(option, minimal) {
+    $('#getmissing').removeAttr('disabled');
+    $('#getshows').removeAttr('disabled');
+    $('#getspecial').removeAttr('disabled');
     var show_id = $('#showSelector').val();
     var show = $('#showSelector :selected').text();
     $("#resultpart").html('<tr><td /><td><img src="img/ajax-loader.gif" alt="loading..." /></td><td /></tr>');
     
-    $.post('results.php', { show_id: show_id, show: show, option: option},
+    $.post('results.php', { show_id: show_id, show: show, option: option, minimal: minimal},
       function(data){
         $('#resultpart').html(data);
         var status = $('#status').html();
         if (status == 'Ended') {
+          $('#ignoreshow').val('Ignore');
           $('#ignoreshow').removeAttr('disabled');
         } else {
-          $('#ignoreshow').attr('disabled','disabled');
+          if (status == 'Ignored') {
+            $('#ignoreshow').removeAttr('disabled');
+            $('#ignoreshow').val('Unignore');
+          } else {
+            $('#ignoreshow').val('Ignore');
+            $('#ignoreshow').attr('disabled','disabled');
+          }
         }
       }
     );
     return false;
   }
 
-  function IgnoreForm(option) {
-    if (confirm("Do you really want to ignore this show?")) {
+  function IgnoreForm() {
+    if (confirm("Do you really want to toggle this show?")) {
       var show_id = $('#showSelector').val();
       var show = $('#showSelector :selected').text();
-      $.post('ignore.php', { show_id: show_id, show: show, option: option},
+      var status = $('#status').html();
+      $.post('ignore.php', { show_id: show_id, show: show, status: status },
         function(data){
           $('#ignoreshow').attr('disabled','disabled');
         }
@@ -82,7 +93,7 @@
 <body style="background-image:url(./img/background.jpg);background-repeat:repeat-x;z-index:0">
 <?php 
   echo '<br><br><br>';
-  echo '<div id="filepath"><div style="float:left;padding-right:0px;padding-bottom:12px;"></div><div style="float:left;"><select class="basic-single" id="showSelector" onchange="SubmitForm(\'Missing\');"><option></option>';
+  echo '<div id="filepath"><div style="float:left;padding-right:0px;padding-bottom:12px;"></div><div style="float:left;"><select class="basic-single" id="showSelector" onchange="SubmitForm(\'Missing\', 1);"><option></option>';
   $section = '';
   $status = '';
   foreach(TVAnalyzer::GetUserShows() as $key => $value) {
@@ -92,11 +103,12 @@
       }
       echo '<optgroup label="'.$value['section'].'">';
       $section = $value['section'];
+      $status = '';
     }
     if ($status != '') {
       if ($status != $value['status']) {
         echo '<option disabled>-- '.$value['status'].' ';
-        for ($i = 0;$i<(122-strlen($value['status'])-4);$i++) {
+        for ($i = 0;$i<(118-strlen($value['status'])-4);$i++) {
           echo '-';
         }
         echo '</option>';
@@ -104,7 +116,7 @@
       }
     } else {
       echo '<option disabled>-- '.$value['status'].' ';
-      for ($i = 0;$i<(122-strlen($value['status'])-4);$i++) {
+      for ($i = 0;$i<(118-strlen($value['status'])-4);$i++) {
         echo '-';
       }
       echo '</option>';
@@ -112,16 +124,17 @@
     }
     echo '<option value="'.$value['show_id'].'">'.$value['title'];
     if ($value['amount'] != '') {
-      echo ' @ '.$value['amount'].' '.substr($value['status'], 0, 1);
+      echo ' @ '.$value['amount'].' ('.substr($value['status'], 0, 1).')';
     }
     echo '</option>';
   }
       
   echo '</select>';
-  echo '</div><div style="float:left; nowrap;">';
-  echo '&nbsp;<input class="button" value="Show Missing" type="button" name="getshows" id="getshows" onClick="SubmitForm(\'Missing\'); return false;" />';
-  echo '&nbsp;|&nbsp;<input class="button" value="Show All" type="button" name="getshows" id="getshows" onClick="SubmitForm(\'All\'); return false;" />';
-  echo '&nbsp;|&nbsp;<input class="button" value="Ignore Show" type="button" name="ignoreshow" disabled id="ignoreshow" onClick="IgnoreForm(\'All\'); return false;" />';
+  echo '</div><div style="float:right; nowrap;">';
+  echo '&nbsp;<input disabled class="button" value="Show Missing" type="button" name="getmissing" id="getmissing" onClick="SubmitForm(\'Missing\', 1); return false;" />';
+  echo '&nbsp;<input disabled class="button" value="Show All" type="button" name="getshows" id="getshows" onClick="SubmitForm(\'All\', 1); return false;" />';
+  echo '&nbsp;|&nbsp;<input disabled class="button" value="Special" type="button" name="getspecial" id="getspecial" onClick="SubmitForm(\'Special\', 0); return false;" />';
+  echo '&nbsp;<input disabled class="button" value="Ignore" type="button" name="ignoreshow" id="ignoreshow" onClick="IgnoreForm(); return false;" />';
   echo '</div><br><br>';
 ?>
 <table cellspacing="0" id="tvtable"> 
@@ -132,5 +145,8 @@
   </thead>
   <tbody id="resultpart"> </tbody> 
 </table>
+<div style="float:right; nowrap; font-size: 12px;">
+  <br>Display Mode: <a href="./">Default</a> | <a href="?mode=all">All</a> | <a href="?mode=continuing">Continuing</a> | <a href="?mode=incomplete">Incomplete</a> | <a href="?mode=completed">Complete</a> | <a href="?mode=finished">Finished</a> | <a href="?mode=ignored">Ignored</a>
+</div>
 </body>
 </html>

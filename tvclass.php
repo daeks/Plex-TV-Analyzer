@@ -1,5 +1,4 @@
 <?php
-
   include_once('config.php');
   
   class TVAnalyzer {
@@ -8,13 +7,13 @@
     private static $TVDBLookURL = 'http://www.thetvdb.com/api/3B54A58ACFAF62FA/series/%s/all/%s.xml';
     private static $TVDBCacheSeconds = 3600;
     
-    public static function AnalyzeShow($show_name, $show_id) {
+    public static function AnalyzeShow($show_name, $show_id, $minimal_season = 1) {
       if (!is_int($show_id)) {
         return 'null';
       } else {
         $refshows = array();
         $show = TVAnalyzer::GetUserShowEpisodes($show_name,$show_id);
-        $refshows[] = TVAnalyzer::GetTVDBShowEpisodes($show);
+        $refshows[] = TVAnalyzer::GetTVDBShowEpisodes($show, $minimal_season);
         
         return $refshows;
       }
@@ -41,34 +40,40 @@
                 case 'ignored':
                   $showme = file_exists('cache/ignore/'.strval($sho['ratingKey']));
                   break;
+                case 'continuing':
+                  $showme = file_exists('cache/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey'])) || file_exists('cache/temp/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
+                  break;
                 case 'incomplete':
                   $showme = file_exists('cache/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey'])) || file_exists('cache/ended/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
+                  break;
+                case 'completed':
+                  $showme = file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey'])) || file_exists('cache/temp/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
                   break;
                 default:
                   $showme = !file_exists('cache/finished/'.strval($sho['ratingKey'])) && !file_exists('cache/ignore/'.strval($sho['ratingKey']));
               }
             }
             if ($showme) {
-              $status = 'Complete & Continueing';
+              $status = 'Continuing & Complete';
               $amount = '';
-              $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@4';;
+              $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@3';;
               if (file_exists('cache/ended/'.strval($sho['ratingKey']))) {
                 $status ='Ended & Incomplete';
-                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@1';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@2';
                 $amount = file_get_contents('cache/ended/'.strval($sho['ratingKey']));
               }
               if (file_exists('cache/'.strval($sho['ratingKey']))) {
-                $status = 'Continueing & Incomplete';
-                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@2';
+                $status = 'Continuing & Incomplete';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@1';
                 $amount = file_get_contents('cache/'.strval($sho['ratingKey']));
               }
               if (file_exists('cache/ignore/'.strval($sho['ratingKey']))) {
                 $status ='Ignored';
-                $sortkey = sprintf('%08d', intval($sec['key'])).'@'.$sec['title'].'@3';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@5';
               }
               if (file_exists('cache/finished/'.strval($sho['ratingKey']))) {
                 $status = 'Finished (Ended & Complete)';
-                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@5';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@4';
                 $amount = file_get_contents('cache/finished/'.strval($sho['ratingKey']));
               }
               $title = (strval($sho['titleSort']) != '' ? strval($sho['titleSort']) : strval($sho['title']));
@@ -85,7 +90,6 @@
       }
       
       usort($shows, function($a,$b){ return strcmp(strtoupper($a["sortkey"]), strtoupper($b["sortkey"]));} );
-      print_r($shows);
       return $shows;
     }
 
@@ -105,7 +109,7 @@
       return $show;
     }
 
-    private static function GetTVDBShowEpisodes($original_show) {
+    private static function GetTVDBShowEpisodes($original_show, $minimal_season = 1) {
       $fixed_name = urlencode($original_show->ShowName);
       $show_url = TVAnalyzer::$TVDBSearchURL.$fixed_name.'&language='.Config::$PlexLANGUAGE;
       $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($show_url));
@@ -123,7 +127,7 @@
 
       $show->Episodes = array();
       foreach ($xml->Episode as $episode) {
-        if (intval($episode->SeasonNumber) < 1) {
+        if (intval($episode->SeasonNumber) < $minimal_season) {
           continue;
         } else {
           $newepisode = new Episode();

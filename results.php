@@ -5,12 +5,16 @@
     $show_id = intval($_POST['show_id']);
     $show_part = explode('@', $_POST['show']);
     $show_name = trim($show_part[0]);
-    $shows = TVAnalyzer::AnalyzeShow($show_name,$show_id);
+    $minimal_season = intval($_POST['minimal']);
+    $shows = TVAnalyzer::AnalyzeShow($show_name,$show_id,$minimal_season);
     if(!is_array($shows)) {
       echo $shows;
       exit();
     }
     foreach($shows as $show) {
+      if (file_exists('cache/ignore/'.$show_id)) {
+        $show->Status = 'Ignored';
+      }
       echo '<tr><td colspan="3" class="show">Show '.$_POST['option'].' - '.$show->ShowName.' ('.$show_id.') - Status: <span id="status">'.$show->Status.'</span></td> </tr>';
       if(is_array($show->Episodes)) {
         $season = $show->Episodes[0]->SeasonNumber;

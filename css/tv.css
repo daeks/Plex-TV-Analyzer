@@ -10,7 +10,11 @@
   margin-left: auto;
   margin-right: auto;
 }
-
+a, a:visited {
+  color: black;
+  font-size: 12px;
+  text-decoration:underline;
+}
 pre {
   font-family: "Courier New", Courier, monospace;
   font-size: 14px;

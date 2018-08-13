@@ -57,6 +57,10 @@
               $status = 'Continuing & Complete';
               $amount = '';
               $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@3';;
+              if (!file_exists('cache/temp/'.strval($sho['ratingKey']))) {
+                $status ='New Show (NO SYNC)';
+                $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@0';
+              }
               if (file_exists('cache/ended/'.strval($sho['ratingKey']))) {
                 $status ='Ended & Incomplete';
                 $sortkey = sprintf('%02d', intval($sec['key'])).'@'.$sec['title'].'@2';
@@ -97,7 +101,7 @@
       $show = new Show();
       $show->ShowName = $show_name;
       $show->Episodes = array();
-      $showXML = simplexml_load_string(TVAnalyzer::GetUrlSource(Config::$PlexURL.'/library/metadata/'.$show_id.'/allLeaves?X-Plex-Token='.Config::$PlexTOKEN));
+      $showXML = simplexml_load_string(TVAnalyzer::GetUrlSource(Config::$PlexURL.'/library/metadata/'.$show_id.'/allLeaves?X-Plex-Token='.Config::$PlexTOKEN, false));
       foreach ($showXML->Video as $epi) {
         $newepisode = new Episode();
         $newepisode->EpisodeNumber = intval($epi['index']);
@@ -152,13 +156,13 @@
       return false;
     }
 
-    private static function GetUrlSource($url) {
+    private static function GetUrlSource($url, $cache = true) {
       $response = '';
       
       if (!is_dir('cache/tvdb')) {
           mkdir('cache/tvdb', 0777, true);
         }
-      if (file_exists('cache/tvdb/'.md5($url))) {
+      if (file_exists('cache/tvdb/'.md5($url)) && $cache) {
         if (time() - filemtime('cache/tvdb/'.md5($url)) > TVAnalyzer::$TVDBCacheSeconds) {
           $session = curl_init($url);
           curl_setopt($session, CURLOPT_HEADER, false);
@@ -179,7 +183,9 @@
         curl_setopt($session, CURLOPT_MAXREDIRS, 3);
         $response = curl_exec($session);
         curl_close($session);
-        file_put_contents('cache/tvdb/'.md5($url), $response);
+        if ($cache) {
+          file_put_contents('cache/tvdb/'.md5($url), $response);
+        }
       }
       return $response;
     }

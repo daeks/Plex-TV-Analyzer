@@ -8,6 +8,8 @@
     
     public static $PlexIGNORE = array();
 
+    public static $PlexFOLDER = array();
+
   }
   
 ?>

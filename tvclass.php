@@ -5,7 +5,7 @@
   
     private static $TVDBSearchURL = 'http://www.thetvdb.com/api/GetSeries.php?seriesname=';
     private static $TVDBLookURL = 'http://www.thetvdb.com/api/3B54A58ACFAF62FA/series/%s/all/%s.xml';
-    private static $TVDBCacheSeconds = 3600;
+    private static $TVDBCacheSeconds = 60 * 60 * 24 * 30 * 3;
     
     public static function AnalyzeShow($show_name, $show_id, $minimal_season = 1) {
       if (!is_int($show_id)) {
@@ -13,7 +13,7 @@
       } else {
         $refshows = array();
         $show = TVAnalyzer::GetUserShowEpisodes($show_name,$show_id);
-        $refshows[] = TVAnalyzer::GetTVDBShowEpisodes($show, $minimal_season);
+        $refshows[] = TVAnalyzer::GetTVDBShowEpisodes($show, $show_id, $minimal_season);
         
         return $refshows;
       }
@@ -22,10 +22,10 @@
     public static function GetUserShows() {
       $shows = array();
       $sectionUrl = Config::$PlexURL.'/library/sections';
-      $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'?X-Plex-Token='.Config::$PlexTOKEN));
+      $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'?X-Plex-Token='.Config::$PlexTOKEN, false));
       foreach ($xml->Directory as $sec) {
         if ((string) $sec['type'] == 'show' && !in_array($sec['title'], Config::$PlexIGNORE)) {
-          $secXML = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'/'.$sec['key'].'/all?X-Plex-Token='.Config::$PlexTOKEN));
+          $secXML = simplexml_load_string(TVAnalyzer::GetUrlSource($sectionUrl.'/'.$sec['key'].'/all?X-Plex-Token='.Config::$PlexTOKEN, false));
           foreach ($secXML->Directory as $sho) {
             $showme = true;
             if (!isset($_GET['mode'])) {
@@ -113,38 +113,53 @@
       return $show;
     }
 
-    private static function GetTVDBShowEpisodes($original_show, $minimal_season = 1) {
+    private static function GetTVDBShowEpisodes($original_show, $show_id, $minimal_season = 1) {
       $fixed_name = urlencode($original_show->ShowName);
       $show_url = TVAnalyzer::$TVDBSearchURL.$fixed_name.'&language='.Config::$PlexLANGUAGE;
       $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($show_url));
+      print_r($xml);
+      
+      if (is_object($xml->Series[0])) {
+        $series_id = (string) $xml->Series[0]->seriesid;
+        $lookup_url = sprintf(TVAnalyzer::$TVDBLookURL, $series_id, Config::$PlexLANGUAGE);
+        $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($lookup_url));
 
-      $series_id = (string) $xml->Series[0]->seriesid;
-      $lookup_url = sprintf(TVAnalyzer::$TVDBLookURL, $series_id, Config::$PlexLANGUAGE);
-      $xml = simplexml_load_string(TVAnalyzer::GetUrlSource($lookup_url));
+        $show = new Show();
+        $show->ShowName = strval($xml->Series->SeriesName);
+        $show->TVDBId = intval($xml->Series->id);
+        $show->IMDBId = intval($xml->Series->IMDB_ID);
+        $show->Status = strval($xml->Series->Status);
+        $show->Year = substr(strval($xml->Series->FirstAired), 0, 4);
 
-      $show = new Show();
-      $show->ShowName = strval($xml->Series->SeriesName);
-      $show->TVDBId = intval($xml->Series->id);
-      $show->Status = strval($xml->Series->Status);
+        $original_show->TVDBId = $show->TVDBId;
 
-      $original_show->TVDBId = $show->TVDBId;
-
-      $show->Episodes = array();
-      foreach ($xml->Episode as $episode) {
-        if (intval($episode->SeasonNumber) < $minimal_season) {
-          continue;
-        } else {
-          $newepisode = new Episode();
-          $newepisode->EpisodeName = strval($episode->EpisodeName);
-          $newepisode->EpisodeNumber = intval($episode->EpisodeNumber);
-          $newepisode->SeasonNumber = intval($episode->SeasonNumber);
-          if (!TVAnalyzer::ContainsEpisode($newepisode, $show)) {
-            $newepisode->Missing = !TVAnalyzer::ContainsEpisode($newepisode, $original_show);
-            $show->Episodes[] = $newepisode;
+        $show->Episodes = array();
+        foreach ($xml->Episode as $episode) {
+          if (intval($episode->SeasonNumber) < $minimal_season) {
+            continue;
+          } else {
+            $newepisode = new Episode();
+            $newepisode->EpisodeName = strval($episode->EpisodeName);
+            $newepisode->EpisodeNumber = intval($episode->EpisodeNumber);
+            $newepisode->SeasonNumber = intval($episode->SeasonNumber);
+            
+            if ($show->Year == '') {
+              $show->Year = substr(strval($episode->FirstAired), 0, 4);
+            }
+            
+            if (!TVAnalyzer::ContainsEpisode($newepisode, $show)) {
+              $newepisode->Missing = !TVAnalyzer::ContainsEpisode($newepisode, $original_show);
+              $show->Episodes[] = $newepisode;
+            }
           }
         }
+        return $show;
+      } else {
+        if (file_exists('cache/temp/'.strval($show_id))) {
+          unlink('cache/temp/'.strval($show_id));
+        }
+        return null;
       }
-      return $show;
     }
 
     private static function ContainsEpisode($episode, $show) {
@@ -159,11 +174,15 @@
     private static function GetUrlSource($url, $cache = true) {
       $response = '';
       
-      if (!is_dir('cache/tvdb')) {
-          mkdir('cache/tvdb', 0777, true);
+      if ($cache) {
+        if (!is_dir('cache/www')) {
+          mkdir('cache/www', 0777, true);
+        } else {
+          TVAnalyzer::CleanUpCache();
         }
-      if (file_exists('cache/tvdb/'.md5($url)) && $cache) {
-        if (time() - filemtime('cache/tvdb/'.md5($url)) > TVAnalyzer::$TVDBCacheSeconds) {
+      }
+      if (file_exists('cache/www/'.md5($url)) && $cache) {
+        if (time() - filemtime('cache/www/'.md5($url)) > TVAnalyzer::$TVDBCacheSeconds) {
           $session = curl_init($url);
           curl_setopt($session, CURLOPT_HEADER, false);
           curl_setopt($session, CURLOPT_RETURNTRANSFER, true);
@@ -171,9 +190,9 @@
           curl_setopt($session, CURLOPT_MAXREDIRS, 3);
           $response = curl_exec($session);
           curl_close($session);
-          file_put_contents('cache/tvdb/'.md5($url), $response);
+          file_put_contents('cache/www/'.md5($url), $response);
         } else {
-          $response = file_get_contents('cache/tvdb/'.md5($url));
+          $response = file_get_contents('cache/www/'.md5($url));
         }
       } else {
         $session = curl_init($url);
@@ -184,12 +203,24 @@
         $response = curl_exec($session);
         curl_close($session);
         if ($cache) {
-          file_put_contents('cache/tvdb/'.md5($url), $response);
+          file_put_contents('cache/www/'.md5($url), $response);
         }
       }
       return $response;
     }
-
+    
+    private static function CleanUpCache() {
+      if (is_dir('cache/www')) {
+        foreach (scandir('cache/www') as $file){
+          if ($file != '.' && $file != '..') {
+            if (time() - filemtime('cache/www/'.$file) > TVAnalyzer::$TVDBCacheSeconds + 5) {
+              unlink('cache/www/'.$file);
+            }
+          }
+        }
+      }
+    }
+    
   }
   
   class Episode {

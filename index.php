@@ -13,6 +13,7 @@
 <script type="text/javascript" src="js/jquery.treetable-3.2.0.min.js"></script>
 <script type="text/javascript" src="js/select2-4.0.5.min.js"></script>
 <script type="text/javascript" src="js/maximize-select2-height.min.js"></script>
+<script type="text/javascript" src="js/tv.js"></script>
 <link rel="stylesheet" href="css/tv.css" type="text/css" />
 <link rel="stylesheet" href="css/select2-4.0.5.min.css" type="text/css" />
 <script type="text/javascript">
@@ -21,11 +22,11 @@
     $('#getmissing').removeAttr('disabled');
     $('#getshows').removeAttr('disabled');
     $('#getspecial').removeAttr('disabled');
-    var show_id = $('#showSelector').val();
+    var data = $('#showSelector').val();
     var show = $('#showSelector :selected').text();
     $("#resultpart").html('<tr><td /><td><img src="img/ajax-loader.gif" alt="loading..." /></td><td /></tr>');
     
-    $.post('results.php', { show_id: show_id, show: show, option: option, minimal: minimal},
+    $.post('results.php', { data: data, show: show, option: option, minimal: minimal},
       function(data){
         $('#resultpart').html(data);
         var status = $('#status').html();
@@ -48,10 +49,10 @@
 
   function IgnoreForm() {
     if (confirm("Do you really want to toggle this show?")) {
-      var show_id = $('#showSelector').val();
+      var data = $('#showSelector').val();
       var show = $('#showSelector :selected').text();
       var status = $('#status').html();
-      $.post('ignore.php', { show_id: show_id, show: show, status: status },
+      $.post('ignore.php', { data: data, show: show, status: status },
         function(data){
           $('#ignoreshow').attr('disabled','disabled');
         }
@@ -91,6 +92,7 @@
 </script>
 </head>
 <body style="background-image:url(./img/background.jpg);background-repeat:repeat-x;z-index:0">
+<button onclick="scrolltop()" id="topbtn">Top</button>
 <?php 
   echo '<br><br><br>';
   echo '<div id="filepath"><div style="float:left;padding-right:0px;padding-bottom:12px;"></div><div style="float:left;"><select class="basic-single" id="showSelector" onchange="SubmitForm(\'Missing\', 1);"><option></option>';
@@ -122,7 +124,7 @@
       echo '</option>';
       $status = $value['status'];
     }
-    echo '<option value="'.$value['show_id'].'">'.$value['title'];
+    echo '<option value="'.$value['section'].'@'.$value['show_id'].'">'.$value['title'];
     if ($value['amount'] != '') {
       echo ' @ '.$value['amount'].' ('.substr($value['status'], 0, 1).')';
     }

@@ -4,10 +4,11 @@
   if(!empty($_POST['data'])) {
     $data = explode('@', $_POST['data']);
     $show_id = intval($data[1]);
+    $guide_id = intval($data[2]);
     $show_part = explode('@', $_POST['show']);
     $show_name = trim($show_part[0]);
     $minimal_season = intval($_POST['minimal']);
-    $shows = TVAnalyzer::AnalyzeShow($show_name,$show_id,$minimal_season);
+    $shows = TVAnalyzer::AnalyzeShow($show_name,$show_id,$guide_id,$minimal_season);
     if(!is_array($shows)) {
       echo $shows;
       exit();
@@ -32,7 +33,8 @@
           }
         }
         
-        echo '<tr><td colspan="3" class="show"><b><u>Show '.$_POST['option'].'</b></u> - ID: <b>'.$show_id.'</b> - Status: <b><span id="status">'.$show->Status.'</span></b><span style="float: right"><b><span id="folder">'.$foldername.'</span></b>'.$folderstatus.'</span> </td></tr>';
+        echo '<img src="'.TVAnalyzer::getMedia($show->Poster).'" style="position:absolute; width: 256px; height: 384px; margin-left: -270px"/>';
+        echo '<tr><td colspan="3" class="show"><b><u>Show '.$_POST['option'].'</b></u> - ID: <b>'.$guide_id.'</b> - Status: <b><span id="status">'.$show->Status.' ('.$show->Cache.')</span></b><span style="float: right"><b><span id="folder">'.$foldername.'</span></b>'.$folderstatus.'</span> </td></tr>';
         if(is_array($show->Episodes)) {
           $season = $show->Episodes[0]->SeasonNumber;
           echo '<tr><td colspan="3" class="season">Season '.$season.'</td></tr>';
@@ -72,10 +74,10 @@
           }
         }
         
-        unlink('cache/'.$show_id);
-        unlink('cache/temp/'.$show_id);
-        unlink('cache/finished/'.$show_id);
-        unlink('cache/ended/'.$show_id);
+        if (file_exists('cache/'.$show_id)) { unlink('cache/'.$show_id); }
+        if (file_exists('cache/temp/'.$show_id)) { unlink('cache/temp/'.$show_id); }
+        if (file_exists('cache/finished/'.$show_id)) { unlink('cache/finished/'.$show_id); }
+        if (file_exists('cache/ended/'.$show_id)) { unlink('cache/ended/'.$show_id); }
         if ($total == $local) {
           if ($show->Status == 'Ended') {
             if (!is_dir('cache/finished')) {

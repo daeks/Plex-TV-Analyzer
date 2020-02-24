@@ -100,7 +100,7 @@
   $status = '';
   foreach(TVAnalyzer::GetUserShows() as $key => $value) {
     if ($section != $value['section']) {
-      if ($secion != '') {
+      if ($section != '') {
         echo '</optgroup>';
       }
       echo '<optgroup label="'.$value['section'].'">';
@@ -124,7 +124,7 @@
       echo '</option>';
       $status = $value['status'];
     }
-    echo '<option value="'.$value['section'].'@'.$value['show_id'].'">'.$value['title'];
+    echo '<option value="'.$value['section'].'@'.$value['show_id'].'@'.$value['guide_id'].'">'.$value['title'];
     if ($value['amount'] != '') {
       echo ' @ '.$value['amount'].' ('.substr($value['status'], 0, 1).')';
     }
